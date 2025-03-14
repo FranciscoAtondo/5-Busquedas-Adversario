@@ -101,50 +101,50 @@ def jugador_manual_conecta4(juego, s, j):
 def ordena_centro(jugadas, jugador):
     """
     Ordena las jugadas de acuerdo a la distancia al centro
+
+    Problema anterior: deberia priorizar las columnas 3 y 4,
+    pero ordena de forma imprecisa con abs(x - 4).
+
+    Con una definicion de prioridad, revisara desde la
+    columna centro a la izquierda.
     """
-    return sorted(jugadas, key=lambda x: abs(x - 4))
+    prioridad = {3: 0, 4: 1, 2: 2, 5: 2, 1: 3, 6: 3, 0: 4}
+    return sorted(jugadas, key=lambda x: prioridad[x])
 
 def evalua_3con(s):
     """
     Evalua el estado s para el jugador 1
+
+    Problema anterior: realiza demasiadas sumas y restas,
+    estas pueden facilmente simplificarse con un for y
+    valores auxiliares.
     """
-    conect3 = sum(
-        1 for i in range(7) for j in range(4) 
-        if (s[i + 7 * j] == s[i + 7 * (j + 1)] 
-            == s[i + 7 * (j + 2)] == 1)
-    ) - sum(
-        1 for i in range(7) for j in range(4) 
-        if (s[i + 7 * j] == s[i + 7 * (j + 1)] 
-            == s[i + 7 * (j + 2)] == -1)
-    ) + sum(
-        1 for i in range(6) for j in range(5) 
-        if (s[7 * i + j] == s[7 * i + j + 1] 
-            == s[7 * i + j + 2] == 1)
-    ) - sum(
-        1 for i in range(6) for j in range(5) 
-        if (s[7 * i + j] == s[7 * i + j + 1] 
-            == s[7 * i + j + 2] == -1)
-    ) + sum(
-        1 for i in range(5) for j in range(4) 
-        if (s[i + 7 * j] == s[i + 7 * j + 8] 
-            == s[i + 7 * j + 16] == 1)
-    ) - sum(
-        1 for i in range(5) for j in range(4) 
-        if (s[i + 7 * j] == s[i + 7 * j + 8] 
-            == s[i + 7 * j + 16] == -1)
-    ) + sum(
-        1 for i in range(5) for j in range(4) 
-        if (s[i + 7 * j + 3] == s[i + 7 * j + 9] 
-            == s[i + 7 * j + 15] == 1)
-    ) - sum(
-        1 for i in range(5) for j in range(4) 
-        if (s[i + 7 * j + 3] == s[i + 7 * j + 9] 
-            == s[i + 7 * j + 15] == -1)
-    )
-    promedio = conect3 / (7 * 4 + 6 * 5 + 5 * 4 + 5 * 4)
-    if abs(promedio) >= 1:
-        print("ERROR, evaluación fuera de rango --> ", promedio)
-    return promedio
+
+    conect3_p1 = 0
+    conect3_p2 = 0
+    direcciones = [1, 7, 8, 6]  # (1)🡢, (7)🡣, (8)🡮, (6)🡧
+
+    for i in range(6):
+        for j in range(7):
+            if s[i * 7 + j] == 0:
+                continue
+            jugador = s[i * 7 + j]
+            
+            for d in direcciones:
+                try:
+                    if (
+                        s[i * 7 + j + d] == jugador and
+                        s[i * 7 + j + 2 * d] == jugador and
+                        s[i * 7 + j + 3 * d] == 0  # Espacio libre para conectar 4
+                    ):
+                        if jugador == 1:
+                            conect3_p1 += 1
+                        else:
+                            conect3_p2 += 1
+                except IndexError:1
+                continue  # Evita errores de índice fuera del rango
+    
+    return (conect3_p1 - conect3_p2) / 100  # Normalización del valor
 
 
     
