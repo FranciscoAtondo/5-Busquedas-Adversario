@@ -22,7 +22,7 @@ class othello(ModeloJuegoZT2):
 
     El juego termina cuando ya no sea posible poner mas piezas.
     
-    Jugador 1: Negro
+    Jugador 1: Negro (Jugador Inicial)
     Jugador 2: Blanco
 
     Estado Inicial:
@@ -48,5 +48,51 @@ class othello(ModeloJuegoZT2):
         self.tablero[4][3] = 2
         self.tablero[4][4] = 1
 
-        # Jugador inicial (Negro comienza en Othello)
         self.turno = 1
+    
+    def jugadas_legales(self, s, j):
+        """
+        Devuelve una lista con las jugadas legales para el jugador j
+        en el estado s (tablero).
+
+        Una jugada es válida si:
+        - Se coloca en una casilla vacía.
+        - Hay al menos una ficha del oponente adyacente.
+        - Se puede capturar al menos una ficha del oponente en alguna dirección.
+        """
+        direcciones = [(-1, -1), (-1, 0), (-1, 1),
+                       (0, -1),        (0, 1),
+                       (1, -1), (1, 0), (1, 1)]
+        
+        oponente = 1 if j == 2 else 2
+        jugadas_validas = []
+
+        for fila in range(8):
+            for columna in range(8):
+                if s[fila][columna] != 0:  # Se ignoran las casillas ocupadas
+                    continue
+                
+                for dx, dy in direcciones:
+                    x, y = fila + dx, columna + dy
+                    fichas_a_voltear = []
+
+                    while 0 <= x < 8 and 0 <= y < 8 and s[x][y] == oponente:
+                        fichas_a_voltear.append((x, y))
+                        x += dx
+                        y += dy
+                    
+                    # Verifica si hay fichas volteables y termina en una del jugador actual.
+                    if fichas_a_voltear and 0 <= x < 8 and 0 <= y < 8 and s[x][y] == j:
+                        jugadas_validas.append((fila, columna))
+                        break
+
+        return jugadas_validas
+    
+    def muestra_tablero(self):
+        """
+        Muestra el tablero de forma legible en la consola.
+        """
+        simbolos = {0: '·', 1: 'B', 2: 'N'}
+        print("  1 2 3 4 5 6 7 8")
+        for i, fila in enumerate(self.tablero):
+            print(i + 1, " ".join(simbolos[c] for c in fila))
