@@ -55,6 +55,10 @@ class othello(ModeloJuegoZT2):
         Devuelve una lista con las jugadas legales para el jugador j
         en el estado s (tablero).
 
+        Parámetros:
+        - s: Estado actual del tablero (matriz 8x8 como lista de listas).
+        - j: Jugador actual (1 = Blanco, 2 = Negro).
+
         Una jugada es válida si:
         - Se coloca en una casilla vacía.
         - Hay al menos una ficha del oponente adyacente.
@@ -87,6 +91,27 @@ class othello(ModeloJuegoZT2):
                         break
 
         return jugadas_validas
+    
+    def transicion(self, s, a, j):
+        """
+        Devuelve el estado que resulta de realizar la jugada a en el estado s
+        para el jugador j.
+        
+        Parámetros:
+        - s: Estado actual del tablero (matriz 8x8 como lista de listas).
+        - a: Tupla (fila, columna) con la jugada elegida.
+        - j: Jugador actual (1 = Blanco, 2 = Negro).
+        """
+        # Copia profunda del estado para evitar modificar el original
+        nuevo_estado = [fila[:] for fila in s]
+
+        # Aplica la jugada y voltea fichas
+        nuevo_estado = self.realiza_jugada(nuevo_estado, j, a)
+
+        # Convertir a tupla de tuplas para inmutabilidad
+        return tuple(tuple(fila) for fila in nuevo_estado)
+
+    
     
     def muestra_tablero(self):
         """
