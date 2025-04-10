@@ -4,7 +4,7 @@ from minimax import jugador_negamax
 from minimax import minimax_iterativo
 from juegos_simplificado import minimax
 
-class othello(ModeloJuegoZT2):
+class Othello(ModeloJuegoZT2):
     """
     Juego de Othello.
 
@@ -36,135 +36,127 @@ class othello(ModeloJuegoZT2):
     7 [ ][ ][ ][ ][ ][ ][ ][ ]
     8 [ ][ ][ ][ ][ ][ ][ ][ ]
     """
-
     def inicializa(self):
-        """
-        Inicializa el juego de Othello.
-        """
-        self.tablero = [[0] * 8 for _ in range(8)]  # Inicializa un tablero vacío de 8x8
-        # Coloca las fichas iniciales
-        self.tablero[3][3], self.tablero[4][4] = 1, 1  # Blancas
-        self.tablero[3][4], self.tablero[4][3] = -1, -1  # Negras
+        """ Inicializa el tablero con la posición inicial de Othello """
+        s = [0] * 64
+        s[27], s[28], s[35], s[36] = 1, -1, -1, 1  # Configuración inicial
+        return tuple(s), 1  # Comienza el jugador 1
 
-        self.turno = 1
-
-        # Se retorna el estado inicial como una tupla inmutable
-        return tuple(tuple(fila) for fila in self.tablero), self.turno
+    def imprime_estado(self, s):
+        """ Imprime el tablero de Othello en formato 8x8 """
+        simbolos = {0: '.', 1: 'X', -1: 'O'}
+        for i in range(8):
+            print(' '.join(simbolos[s[j]] for j in range(i*8, (i+1)*8)))
+        print()
     
     def jugadas_legales(self, s, j):
-        """
-        Devuelve una lista con las jugadas legales para el jugador j en el estado s.
-        """
-        direcciones = [(-1, -1), (-1, 0), (-1, 1),
-                    (0, -1),        (0, 1),
-                    (1, -1), (1, 0), (1, 1)]
+        """ Devuelve la lista de posiciones donde el jugador j puede colocar una ficha """
+        direcciones = [-1, 1, -8, 8, -9, 9, -7, 7]  # Movimientos en todas direcciones
+        jugadas = set()
 
-        oponente = 1 if j == 2 else 2
-        jugadas_validas = []
-
-        for fila in range(8):
-            for columna in range(8):
-                if s[fila][columna] != 0:  # Se ignoran las casillas ocupadas
+        for i in range(64):
+            if s[i] != j:
+                continue
+            for d in direcciones:
+                pos = i + d
+                if not (0 <= pos < 64):
                     continue
+                if s[pos] == -j:  # Hay una ficha del oponente
+                    while 0 <= pos < 64 and s[pos] == -j:
+                        pos += d
+                    if 0 <= pos < 64 and s[pos] == 0:
+                        jugadas.add(pos)
+        return list(jugadas)
 
-                for dx, dy in direcciones:
-                    x, y = fila + dx, columna + dy
-                    fichas_a_voltear = []
-
-                    while 0 <= x < 8 and 0 <= y < 8 and s[x][y] == oponente:
-                        fichas_a_voltear.append((x, y))
-                        x += dx
-                        y += dy
-                    
-                    # Si encontramos una ficha del mismo jugador, es una jugada válida
-                    if fichas_a_voltear and 0 <= x < 8 and 0 <= y < 8 and s[x][y] == j:
-                        jugadas_validas.append((fila, columna))
-                        break
-
-        return jugadas_validas
-    
-    def realiza_jugada(self, tablero, jugador, jugada):
-        """
-        Aplica la jugada al tablero y voltea las fichas correspondientes.
-        """
-        direcciones = [(-1, -1), (-1, 0), (-1, 1),
-                    (0, -1),        (0, 1),
-                    (1, -1), (1, 0), (1, 1)]
-
-        fila, columna = jugada
-        tablero = list(map(list, tablero))  # Convierte cada fila en una lista
-        oponente = 1 if jugador == 2 else 2
-
-        for dx, dy in direcciones:
-            x, y = fila + dx, columna + dy
-            fichas_a_voltear = []
-
-            while 0 <= x < 8 and 0 <= y < 8 and tablero[x][y] == oponente:
-                fichas_a_voltear.append((x, y))
-                x += dx
-                y += dy
-            
-            # Si al final hay una ficha del mismo jugador, se voltean las fichas atrapadas
-            if fichas_a_voltear and 0 <= x < 8 and 0 <= y < 8 and tablero[x][y] == jugador:
-                for fx, fy in fichas_a_voltear:
-                    tablero[fx][fy] = jugador
-
-        return tablero
-
-    
     def transicion(self, s, a, j):
-        """
-        Devuelve el estado que resulta de realizar la jugada a en el estado s
-        para el jugador j.
-        
-        Parámetros:
-        - s: Estado actual del tablero (matriz 8x8 como lista de listas).
-        - a: Tupla (fila, columna) con la jugada elegida.
-        - j: Jugador actual (1 = Blanco, 2 = Negro).
-        """
-        # Copia profunda del estado para evitar modificar el original
-        nuevo_estado = [fila[:] for fila in s]
+        """ Coloca la ficha en la posición a y cambia las fichas capturadas """
+        direcciones = [-1, 1, -8, 8, -9, 9, -7, 7]
+        s = list(s)
+        s[a] = j  # Coloca la ficha
 
-        # Aplica la jugada y voltea fichas
-        nuevo_estado = self.realiza_jugada(nuevo_estado, j, a)
+        for d in direcciones:
+            pos = a + d
+            capturas = []
+            while 0 <= pos < 64 and s[pos] == -j:
+                capturas.append(pos)
+                pos += d
+            if 0 <= pos < 64 and s[pos] == j:
+                for p in capturas:
+                    s[p] = j  # Captura las fichas del oponente
 
-        # Convertir a tupla de tuplas para inmutabilidad
-        return tuple(tuple(fila) for fila in nuevo_estado)
+        return tuple(s)
 
     def terminal(self, s):
-        """
-        Devuelve True si el estado s es terminal (ningún jugador puede jugar).
-        """
-        return not self.jugadas_legales(s, 1) and not self.jugadas_legales(s, 2)
+        """ Verifica si el juego ha terminado (no hay jugadas legales para ningún jugador) """
+        return not self.jugadas_legales(s, 1) and not self.jugadas_legales(s, -1)
 
     def ganancia(self, s):
-        """
-        Devuelve la diferencia de fichas entre los jugadores al finalizar el juego.
-        Un valor positivo favorece a las blancas, un valor negativo a las negras.
-        """
-        blancas = sum(fila.count(1) for fila in s)
-        negras = sum(fila.count(2) for fila in s)
-        
-        return blancas - negras  # Se usa para que jugador 1 (Blanco) busque maximizar
+        """ Calcula la ganancia como la diferencia de fichas entre los jugadores """
+        return sum(s)
+
+class JugadorNegamaxOthello:
+    def __init__(self, nombre="AI", profundidad=4, evalua=None):
+        self.nombre = nombre
+        self.profundidad = profundidad
+        self.evalua = evalua
+
+    def politica(self, juego, estado):
+        return jugador_negamax(
+            juego=juego, 
+            estado=estado[0],  # estado es una tupla (tablero, jugador)
+            jugador=estado[1], 
+            d=self.profundidad, 
+            evalua=self.evalua
+        )
 
 
-    def muestra_tablero(self):
-        """
-        Muestra el tablero de forma legible en la consola.
-        """
-        simbolos = {0: '·', 1: 'B', 2: 'N', -1: 'N'}  # Agregar -1 como 'N' (Negro)
-        print("  1 2 3 4 5 6 7 8")
-        for i, fila in enumerate(self.tablero):
-            print(i + 1, " ".join(simbolos[c] for c in fila))
 
-if __name__ == "__main__":
-    juego = othello()
+class JugadorHumanoOthello:
+    def __init__(self, nombre="Humano"):
+        self.nombre = nombre
+    
+    def politica(self, juego, estado):
+        juego.imprime_estado(estado[0])
+        jugadas = juego.jugadas_legales(estado[0], estado[1])
+        if not jugadas:
+            print("No hay jugadas disponibles. Turno perdido.")
+            return None
+        print(f"Jugadas legales: {jugadas}")
+        return int(input("Elige una jugada: "))
 
-    resultado, estado_final = juega_dos_jugadores(
-        juego,
-        lambda juego, estado, jugador: minimax(juego, estado, jugador), 
-        lambda juego, estado, jugador: minimax_iterativo(juego, estado, jugador, tiempo=2)
-    )
+class PartidaZT2:
+    def __init__(self, juego, jugador1, jugador2):
+        self.juego = juego
+        self.jugadores = {1: jugador1, -1: jugador2}
+        self.estado = juego.inicializa()
+    
+    def jugar(self, verbose=True):
+        """Ejecuta el juego hasta el final."""
+        while not self.juego.terminal(self.estado[0]):
+            jugador = self.jugadores[self.estado[1]]
+            jugada = jugador.politica(self.juego, self.estado)
+            if jugada is not None:
+                self.estado = (self.juego.transicion(self.estado[0], jugada, self.estado[1]), -self.estado[1])
+            if verbose:
+                self.juego.imprime_estado(self.estado[0])
 
-    juego.muestra_tablero()
-    print(f"Resultado final: {'Empate' if resultado == 0 else 'Gana Blanco' if resultado > 0 else 'Gana Negro'}")
+        print("Juego terminado.")
+        resultado = self.juego.ganancia(self.estado[0])
+        if resultado > 0:
+            print("Gana Jugador 1 (X)")
+        elif resultado < 0:
+            print("Gana Jugador 2 (O)")
+        else:
+            print("Empate.")
+
+
+# Crear instancia del juego
+juego = Othello()
+
+# Prueba con jugador humano
+jugador1 = JugadorHumanoOthello("Jugador 1")
+jugador2 = JugadorNegamaxOthello(nombre="Máquina", profundidad=)
+
+# Ejecutar partida
+partida = PartidaZT2(juego, jugador1, jugador2)
+partida.jugar(True)
